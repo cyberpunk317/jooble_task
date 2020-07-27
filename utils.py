@@ -49,7 +49,7 @@ class FeatureAdder:
         df[new_feature] = [MAP_FEAT_IDX[x] for x in df[new_feature]]
         return df
 
-    def abs_mean_diff_feature(self, df, features_mean_std, new_feature='feature_2_abs_mean_diff'):
+    def abs_mean_diff_feature(self, df, features_mean_std, new_feature='max_feature_2_abs_mean_diff'):
         df[new_feature] = None
         cols = np.array(COL_NAMES)[df['max_feature_2_index'].values]
         for i, c in enumerate(cols):

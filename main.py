@@ -8,6 +8,14 @@ TRAIN = 'data/train.tsv'
 TEST = 'data/test.tsv'
 SUB = 'data/test_proc.tsv'
 FEATURES = 256
+COL_NAMES = [f'feature_{i}' for i in range(FEATURES)]
+
+
+def standardize(df, features_mean_std):
+    for col in COL_NAMES:
+        mean, std = features_mean_std[col]['mean'], features_mean_std[col]['std']
+        df[col] = (df[col] - mean) / std
+    return df
 
 def main():
     train = pd.read_csv(TRAIN, sep='\t')
@@ -37,11 +45,10 @@ def main():
 
     train = feature_adder.abs_mean_diff_feature(train, features_mean_std)
     test = feature_adder.abs_mean_diff_feature(test, features_mean_std)
+    test = standardize(test, features_mean_std)
 
-    test.drop(col_names, axis=1, inplace=True)
-    sub = pd.read_csv(TEST, sep='\t').merge(test, on='id_job')
-
-    sub.to_csv(SUB, sep='\t', index=False)
+    test.rename(columns = {f"feature_{i}":f"feature_2_stand_{i}" for i in range(FEATURES)}, inplace=True)
+    test.to_csv(SUB, sep='\t', index=False)
 
 
 if __name__ == "__main__":
