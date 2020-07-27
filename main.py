@@ -17,6 +17,7 @@ def standardize(df, features_mean_std):
         df[col] = (df[col] - mean) / std
     return df
 
+
 def main():
     train = pd.read_csv(TRAIN, sep='\t')
     test = pd.read_csv(TEST, sep='\t')
@@ -44,22 +45,21 @@ def main():
     test = feature_adder.abs_mean_diff_feature(test, features_mean_std)
     test = standardize(test, features_mean_std)
 
-    test.rename(columns = {f"feature_{i}":f"feature_2_stand_{i}" for i in range(FEATURES)}, inplace=True)
+    test.rename(columns={f"feature_{i}": f"feature_2_stand_{i}" for i in range(FEATURES)}, inplace=True)
     test.to_csv(SUB, sep='\t', index=False)
 
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser(description='Process some tables.')
     parser.add_argument('--factor',
-                    help='no. of batch of features to process')
+                        help='no. of batch of features to process')
     parser.add_argument('--norm',
-                    default="Z-score",
-                    help='normalization technique to use in processing')
+                        default="Z-score",
+                        help='normalization technique to use in processing')
 
     args = parser.parse_args()
     f, norm = int(args.factor), args.norm
     assert norm == 'Z-score', "Not this time"
     assert f == 2, "Not this time as well"
     main()
-    print('Success')
+    print('test_proc.tsv created successfully')
