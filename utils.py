@@ -1,4 +1,5 @@
 import warnings
+import glob
 from functools import reduce
 from multiprocessing import Pool
 
@@ -47,11 +48,11 @@ class StatsCalculator:
         if multiproc:
             BATCH = len(df) // N_CORES
             pool = Pool(N_CORES)
-            results = [pool.apply_async(process, (df.loc[i*BATCH:i*BATCH+BATCH, col].values,))
+            results = [pool.apply_async(process, (df.loc[i * BATCH:i * BATCH + BATCH, col].values,))
                        for i in range(N_CORES)]
 
             results = [x.get() for x in results]
-            results = reduce(lambda a, b: a+b, results)
+            results = reduce(lambda a, b: a + b, results)
             results /= len(df)
 
             return results
@@ -76,3 +77,10 @@ class FeatureAdder:
         for i, c in enumerate(cols):
             df[new_feature][i] = abs(feature_stats[c]['max'] - feature_stats[c]['mean'])
         return df
+
+
+def get_data():
+    train_data, test_data = (sorted(glob.glob('data/train*')),
+                             sorted(glob.glob('data/test*')))
+    assert len(train_data) == len(test_data), "Unequal train/test sizes"
+    return train_data, test_data
