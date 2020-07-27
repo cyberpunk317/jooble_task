@@ -30,15 +30,12 @@ def main():
     stats_calc = StatsCalculator()
     features_mean_std = defaultdict(defaultdict)
 
-    col_names = [f'feature_{i}' for i in range(FEATURES)]
-    for col in col_names:
+    for col in COL_NAMES:
         features_mean_std[col]['mean'] = stats_calc.calc_mean(train, col)
         features_mean_std[col]['std'] = stats_calc.calc_std(train, col)
         features_mean_std[col]['max'] = train[col].max()
 
     feature_adder = FeatureAdder()
-    # map features to their indices
-    map_feat_idx = {f: i for i, f in enumerate(col_names)}
 
     train = feature_adder.max_index_feature(train)
     test = feature_adder.max_index_feature(test)
