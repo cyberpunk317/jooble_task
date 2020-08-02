@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 
 from scores import ZScore
+
 warnings.filterwarnings('ignore')
 
 FEATURES = 256
@@ -19,6 +20,9 @@ FEATURES = 256
 COL_NAMES = [f'feature_{i}' for i in range(FEATURES)]
 NORM_MAPPER = {'Z-score': ZScore()}
 LEN_DF = len(pd.read_csv('data/train.tsv', sep='\t', usecols=['id_job']))
+
+feature_stats = defaultdict(lambda: defaultdict(list))
+test_feature_stats = defaultdict(lambda: defaultdict(list))
 
 
 class Preprocessor:
@@ -101,10 +105,6 @@ def standardize(df, NORM):
     return df
 
 
-feature_stats = defaultdict(lambda: defaultdict(list))
-test_feature_stats = defaultdict(lambda: defaultdict(list))
-
-
 def process_data_chunk(x, test=False):
     preprocessor = Preprocessor()
     x = preprocessor.split_features(x)
@@ -177,6 +177,8 @@ def find_train_stats(train_path, chunksize):
         feature_stats[col]['std'] = feature_stats[col]['std'] / LEN_DF
         feature_stats[col]['std'] = np.sqrt(feature_stats[col]['std'])
 
+    return feature_stats
+
 
 def find_test_max_values(test_path, chunksize):
     for chunk, test in enumerate(pd.read_csv(test_path, sep='\t', chunksize=chunksize)):
@@ -186,6 +188,7 @@ def find_test_max_values(test_path, chunksize):
     for col in COL_NAMES:
         test_feature_stats[col]['max'] = int(reduce(lambda a, b: a if a > b else b,
                                                     test_feature_stats[col]['max']))
+    return test_feature_stats
 
 
 def submit_results(test_path, chunksize, norm):
