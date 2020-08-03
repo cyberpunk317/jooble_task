@@ -16,8 +16,6 @@ FEATURES = 256
 COL_NAMES = [f'feature_{i}' for i in range(FEATURES)]
 MAP_FEAT_IDX = {f: i for i, f in enumerate(COL_NAMES)}
 N_CORES = 8
-FEATURES = 256
-COL_NAMES = [f'feature_{i}' for i in range(FEATURES)]
 NORM_MAPPER = {'Z-score': ZScore()}
 LEN_DF = len(pd.read_csv('data/train.tsv', sep='\t', usecols=['id_job']))
 
@@ -48,18 +46,17 @@ class Preprocessor:
         return df
 
 
-def process(x, _=None):
-    return x.sum()
-
-
 class StatsCalculator:
 
     @staticmethod
-    def calc_mean(df, col, multiproc=False):
+    def process(x, _=None):
+        return x.sum()
+
+    def calc_mean(self, df, col, multiproc=False):
         if multiproc:
             BATCH = len(df) // N_CORES
             pool = Pool(N_CORES)
-            results = [pool.apply_async(process, (df.loc[i * BATCH:i * BATCH + BATCH, col].values,))
+            results = [pool.apply_async(self.process, (df.loc[i * BATCH:i * BATCH + BATCH, col].values,))
                        for i in range(N_CORES)]
 
             results = [x.get() for x in results]
@@ -77,17 +74,18 @@ class StatsCalculator:
 
 class FeatureAdder:
 
-    def max_index_feature(self, df, new_feature='max_feature_2_index'):
+    @staticmethod
+    def max_index_feature(df, new_feature='max_feature_2_index'):
         df[new_feature] = df.loc[:, COL_NAMES].idxmax(axis=1).values
         df[new_feature] = df[new_feature].map(lambda x: MAP_FEAT_IDX[x])
         return df
 
-    def abs_mean_diff_feature(self, df, train_feature_stats, test_feature_stats,
+    @staticmethod
+    def abs_mean_diff_feature(df, train_feature_stats,
                               new_feature='max_feature_2_abs_mean_diff'):
-        df[new_feature] = None
         cols = np.array(COL_NAMES)[df['max_feature_2_index'].values]
-        for i, c in enumerate(cols):
-            df[new_feature][i] = abs(test_feature_stats[c]['max'] - train_feature_stats[c]['mean'])
+        mean_values = [train_feature_stats[c]['mean'] for c in cols]
+        df[new_feature] = abs(df.apply(lambda x: max(x), axis=1) - mean_values)
         return df
 
 
@@ -121,13 +119,8 @@ def add_test_features(x):
 
     x = feature_adder.max_index_feature(x)
 
-    x = feature_adder.abs_mean_diff_feature(x, feature_stats, test_feature_stats)
+    x = feature_adder.abs_mean_diff_feature(x, feature_stats)
     return x
-
-
-def find_max_values(x):
-    for col in COL_NAMES:
-        test_feature_stats[col]['max'].append(x[col].max())
 
 
 def find_mean_values(x):
@@ -178,17 +171,6 @@ def find_train_stats(train_path, chunksize):
         feature_stats[col]['std'] = np.sqrt(feature_stats[col]['std'])
 
     return feature_stats
-
-
-def find_test_max_values(test_path, chunksize):
-    for chunk, test in enumerate(pd.read_csv(test_path, sep='\t', chunksize=chunksize)):
-        x = process_data_chunk(test, test=True)
-        find_max_values(x)
-
-    for col in COL_NAMES:
-        test_feature_stats[col]['max'] = int(reduce(lambda a, b: a if a > b else b,
-                                                    test_feature_stats[col]['max']))
-    return test_feature_stats
 
 
 def submit_results(test_path, chunksize, norm):

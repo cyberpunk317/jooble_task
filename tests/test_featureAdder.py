@@ -5,7 +5,7 @@ import pandas as pd
 import unittest2
 
 sys.path.insert(0, '..')
-from utils import StatsCalculator, Preprocessor, FeatureAdder, find_train_stats, find_test_max_values
+from utils import StatsCalculator, Preprocessor, FeatureAdder, find_train_stats
 
 FEATURES = 256
 
@@ -51,15 +51,13 @@ class TestFeatureAdder(unittest2.TestCase):
         new_feature = 'max_feature_2_abs_mean_diff'
         cols = np.array(self.col_names)[df['max_feature_2_index'].values]
         train_stats = find_train_stats('data/train.tsv', chunksize=10000)
-        test_stats = find_test_max_values('data/test.tsv', chunksize=10000)
-        df = self.feature_adder.abs_mean_diff_feature(df, train_stats, test_stats)
+        df = self.feature_adder.abs_mean_diff_feature(df.loc[:, df.columns != 'id_job'], train_stats)
         results = []
 
         for i, col in enumerate(cols):
             # keep in mind outliers in test data
-            lower_bound, upper_bound = 0, max(train_stats[col]['std'],
-                                              test_stats[col]['max'] - train_stats[col]['mean'])
+            lower_bound, upper_bound = 0, train_stats[col]['std']
             results.append(lower_bound <= df[new_feature][i] <= upper_bound)
 
         self.assertTrue(np.all(results),
-                        "max_feature_2_index feature not in range OR has wrong dtype")
+                        "max_feature_2_index feature not in expected range OR has wrong dtype")
