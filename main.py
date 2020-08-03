@@ -10,9 +10,9 @@ def main():
     train_data, test_data = get_data()
     chunksize = 10000
     for f_batch, (train_path, test_path) in zip(FEATURE_BATCH, zip(train_data, test_data)):
-        find_train_stats(train_path, chunksize)
+        train_stats = find_train_stats(train_path, chunksize)
 
-        submit_results(test_path, chunksize, NORM)
+        submit_results(train_stats, test_path, chunksize, NORM)
 
         merge_results(SUB)
 

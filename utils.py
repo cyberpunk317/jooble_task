@@ -114,12 +114,12 @@ def process_data_chunk(x, test=False):
     return x
 
 
-def add_test_features(x):
+def add_test_features(x, train_feature_stats):
     feature_adder = FeatureAdder()
 
     x = feature_adder.max_index_feature(x)
 
-    x = feature_adder.abs_mean_diff_feature(x, feature_stats)
+    x = feature_adder.abs_mean_diff_feature(x, train_feature_stats)
     return x
 
 
@@ -131,11 +131,10 @@ def find_mean_values(x):
 def submit_test_chunk(x, chunk, f_batch=2):
     x.rename(columns={f"feature_{i}": f"feature_{f_batch}_stand_{i}" for i in range(FEATURES)},
              inplace=True)
-    import os
 
     if not os.path.isdir('output'):
         os.mkdir('output')
-
+    import pdb; pdb.set_trace()
     if f_batch == 2:
         x.to_csv(f'output/test_proc_{chunk}.tsv', sep='\t', index=False)
     else:
@@ -173,15 +172,19 @@ def find_train_stats(train_path, chunksize):
     return feature_stats
 
 
-def submit_results(test_path, chunksize, norm):
+def submit_results(train_feature_stats, test_path, chunksize, norm):
+    import pdb; pdb.set_trace()
     for chunk, test in enumerate(pd.read_csv(test_path, sep='\t', chunksize=chunksize)):
         x = process_data_chunk(test, test=True)
-        x = add_test_features(x)
+        x = add_test_features(x, train_feature_stats)
         x = standardize(x, norm)
         submit_test_chunk(x, chunk)
 
 
 def merge_results(sub):
+    if os.path.exists(sub):
+        os.remove(sub)
+
     for i, df_path in enumerate(glob.glob('output/test_proc_*')):
         df = pd.read_csv(df_path, sep='\t')
         if i == 0:
